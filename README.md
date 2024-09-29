@@ -1,5 +1,16 @@
 # Distributed-object-storage-system
 
+# 启动方式
+#### 数据服务节点启动
+```
+export RABBITMQ_SERVER=amqp://test:test@172.17.0.2:5672
+LISTEN_ADDRESS=10.29.1.1:12345 STORAGE_ROOT=/tmp/1 go run dataServer/dataServer.go
+```
+#### 接口服务节点启动
+```
+LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
+```
+
 ## 接口和数据存储分离的架构
 
 ![1](./image/1.png)
