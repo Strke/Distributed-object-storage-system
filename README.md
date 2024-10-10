@@ -68,6 +68,15 @@ LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
 * GET /versions/ : 查询所有对象的版本
 * GET /versions/<object_name> : 查询指定对象的版本
 
+### 数据校验和去重
+新增REST接口：
+* POST /temp/<hash>:POST方法访问temp接口，该方式会在数据服务节点上创建一个临时对象，并返回一个uuid来标识该临时对象
+* PATCH /temp/<uuid>：用于访问数据服务节点上的临时对象
+* PUT /temp/<uuid>：接口服务数据校验一致，调用PUT方法将临时文件转正
+* DELETE /temp/<uuid>：接口服务数据校验不一致，调用DELETE方法删除该临时文件
+
+
+
 ### 优势：
 
 1、实现了接口服务与数据服务分离的架构，任意新主机只需要向`RabbitMQ`注册，即可获取数据服务的支持。或是作为数据服务节点，承载数据服务的能力。

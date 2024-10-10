@@ -1,6 +1,10 @@
 package utils
 
-import "net/http"
+import (
+	"encoding/base64"
+	"io"
+	"net/http"
+)
 
 func GetHashFromHeader(h http.Header) string {
 	digest := h.Get("digest")
@@ -12,4 +16,10 @@ func GetHashFromHeader(h http.Header) string {
 		return ""
 	}
 	return digest[:8]
+}
+
+func CalculateHash(r io.Reader) string {
+	h := sha256.New()
+	io.Copy(h, r)
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

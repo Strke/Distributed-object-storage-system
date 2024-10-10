@@ -5,6 +5,7 @@ import (
 	"go-project/Scalable-distributed-system/ApiServer/heartbeat"
 	"go-project/Scalable-distributed-system/ApiServer/locate"
 	"go-project/Scalable-distributed-system/ApiServer/utils"
+	"go-project/Scalable-distributed-system/es"
 	"go-project/Scalable-distributed-system/objectstream"
 	"io"
 	"log"
@@ -48,7 +49,8 @@ func put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, e := storeObject(r.Body, url.PathEscape(hash))
+	size := utils.GetSizeFromHeader(r.Header)
+	c, e := storeObject(r.Body, hash, size)
 	if e != nil {
 		log.Println(e)
 		w.WriteHeader(c)
@@ -60,33 +62,37 @@ func put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := strings.Split(r.URL.EscapedPath(), "/")[2]
-	size := utils.GetSizeFromHeader(r.Header)
 	e = es.AddVersion(name, hash, size)
 	if e != nil {
 		log.Println(e)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-
 }
 
-func storeObject(r io.Reader, object string) (int, error) {
-	stream, err := putStream(object)
+func storeObject(r io.Reader, hash string, size int64) (int, error) {
+	if locate.Exist(url.PathEscape(hash)) {
+		return http.StatusOK, nil
+	}
+	stream, err := putStream(url.PathEscape(hash), size)
 	if err != nil {
 		return http.StatusServiceUnavailable, err
 	}
-	io.Copy(stream, r)
-	err = stream.Close()
-	if err != nil {
-		return http.StatusInternalServerError, err
+	reader := io.TeeReader(r, stream)
+	d := utils.CalculateHash(reader)
+	if d != hash {
+		stream.Commit(false)
+		return http.StatusBadRequest, fmt.Errorf("object hash mismatch, calculated=%s, request=%s", d, hash)
 	}
+	stream.Commit(true)
 	return http.StatusOK, nil
 }
-func putStream(object string) (*objectstream.PutStream, error) {
+
+func putStream(hash string, size int64) (*objectstream.TempPutStream, error) {
 	server := heartbeat.ChooseRandomDataServer()
 	if server == "" {
 		return nil, fmt.Errorf("cannot find any dataServer")
 	}
-	return objectstream.NewPutStream(server, object), nil
+	return objectstream.NewTempPutStream(server, hash, size)
 }
 
 //func get(w http.ResponseWriter, r *http.Request) {
@@ -101,7 +107,7 @@ func putStream(object string) (*objectstream.PutStream, error) {
 //}
 
 func get(w http.ResponseWriter, r *http.Request) {
-	name := strings.Split(r.URL.EscapedPath(), "/")
+	name := strings.Split(r.URL.EscapedPath(), "/")[2]
 	versionId := r.URL.Query()["version"]
 	version := 0
 	var e error
@@ -143,7 +149,7 @@ func getStream(object string) (io.Reader, error) {
 
 func del(w http.ResponseWriter, r *http.Request) {
 	name := strings.Split(r.URL.EscapedPath(), "/")[2]
-	version, e := es.SearchAllVersion(name)
+	version, e := es.SearchLatestVersion(name)
 	if e != nil {
 		log.Println(e)
 		w.WriteHeader(http.StatusInternalServerError)
