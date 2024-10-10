@@ -13,6 +13,7 @@ func main() {
 	go heartbeat.ListenHeartbeat()
 	http.HandleFunc("/objects/", objects.Handler)
 	http.HandleFunc("/locate/", locate.Handler)
+	http.HandleFunc("/versions/", versions.Handler)
 	err := http.ListenAndServe(os.Getenv("LISTEN_ADDRESS"), nil)
 	if err != nil {
 		log.Fatal(err)

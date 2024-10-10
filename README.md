@@ -57,6 +57,17 @@ LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
 
 4、替换HTTP包中的ip地址，即`10.29.2.2:12345 -> 10.29.1.1：12345`。此时就会通过HTTP协议获取数据服务节点上的地址，并通过io流显示给用户。
 
+### 元数据服务
+
+新增功能接口：
+* GET /objects/<object_name>?version=<version_id> : 获取指定版本的对象
+* PUT /objects/<object_name> : 推送对象
+  * 将对象散列值和长度作为元数据保存在元数据服务中
+  * PUT成功后，会为该对象添加一个新版本，版本号从1开始。、
+* DELETE /objects/<object_name> : 在删除一个对象时，只需要给对象添加一个表示删除的特殊版本，数据是仍然保留在数据节点上的。
+* GET /versions/ : 查询所有对象的版本
+* GET /versions/<object_name> : 查询指定对象的版本
+
 ### 优势：
 
 1、实现了接口服务与数据服务分离的架构，任意新主机只需要向`RabbitMQ`注册，即可获取数据服务的支持。或是作为数据服务节点，承载数据服务的能力。
