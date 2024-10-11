@@ -1,6 +1,7 @@
 package temp
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +16,9 @@ func put(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
 	infoFile := os.Getenv("STORAGE_ROOT") + "/temp/" + uuid
+
 	datFile := infoFile + ".dat"
 	f, e := os.Open(datFile)
 	if e != nil {
@@ -33,6 +36,7 @@ func put(w http.ResponseWriter, r *http.Request) {
 	actual := info.Size()
 	os.Remove(infoFile)
 	if actual != tempinfo.Size {
+		fmt.Println("file size error")
 		os.Remove(datFile)
 		log.Println("actual size mismatch, expect", tempinfo.Size, "actual", actual)
 		w.WriteHeader(http.StatusInternalServerError)

@@ -2,8 +2,9 @@ package versions
 
 import (
 	"encoding/json"
+	"fmt"
+	"go-project/Scalable-distributed-system/es"
 	"log"
-
 	"net/http"
 	"strings"
 )
@@ -17,6 +18,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	from := 0
 	size := 1000
 	name := strings.Split(r.URL.EscapedPath(), "/")[2] //获取URL中<object>的部分
+	fmt.Println(name)
 	for {
 		metas, e := es.SearchAllVersions(name, from, size)
 		if e != nil {

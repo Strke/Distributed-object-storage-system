@@ -21,9 +21,11 @@ type searchResult struct {
 }
 
 func SearchLatestVersion(name string) (meta Metadata, e error) {
-	url := fmt.Sprintf("http://%s/metadata/_search?q=name:%s&size=1&sort=version:desc",
+	url := fmt.Sprintf("http://%s/metadata/_search?q=Name:%s&size=1&sort=Version:desc",
 		os.Getenv("ES_SERVER"), url.PathEscape(name))
+	fmt.Println(url)
 	r, e := http.Get(url)
+	fmt.Println("url:", r)
 	if e != nil {
 		return
 	}
@@ -47,10 +49,11 @@ func AddVersion(name string, hash string, size int64) error {
 	}
 	return PutMetadata(name, version.Version+1, size, hash)
 }
-func SearchAllVersion(name string, from, size int) ([]Metadata, error) {
+func SearchAllVersions(name string, from, size int) ([]Metadata, error) {
 	url := fmt.Sprintf("http://%s/metadata/_search?sort=name,version&from=%d&size=%d", os.Getenv("ES_SERVER"), from, size)
+	//fmt.Println(url)
 	if name != "" {
-		url += "&q=name:" + name
+		url += "&q=Name:" + name
 	}
 	r, e := http.Get(url)
 	if e != nil {
@@ -63,5 +66,6 @@ func SearchAllVersion(name string, from, size int) ([]Metadata, error) {
 	for i := range sr.Hits.Hits {
 		metas = append(metas, sr.Hits.Hits[i].Source)
 	}
+	fmt.Println(metas)
 	return metas, nil
 }

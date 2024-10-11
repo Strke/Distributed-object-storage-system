@@ -50,6 +50,7 @@ func put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	size := utils.GetSizeFromHeader(r.Header)
+	fmt.Println(size)
 	c, e := storeObject(r.Body, hash, size)
 	if e != nil {
 		log.Println(e)
@@ -70,7 +71,9 @@ func put(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeObject(r io.Reader, hash string, size int64) (int, error) {
+	fmt.Println("Start store")
 	if locate.Exist(url.PathEscape(hash)) {
+		fmt.Println("hash already exist. don`t store again")
 		return http.StatusOK, nil
 	}
 	stream, err := putStream(url.PathEscape(hash), size)
@@ -79,10 +82,13 @@ func storeObject(r io.Reader, hash string, size int64) (int, error) {
 	}
 	reader := io.TeeReader(r, stream)
 	d := utils.CalculateHash(reader)
+	fmt.Println(d)
+	fmt.Println(hash)
 	if d != hash {
 		stream.Commit(false)
 		return http.StatusBadRequest, fmt.Errorf("object hash mismatch, calculated=%s, request=%s", d, hash)
 	}
+	fmt.Println("start commit")
 	stream.Commit(true)
 	return http.StatusOK, nil
 }
@@ -125,6 +131,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	if meta.Hash == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -142,7 +149,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 func getStream(object string) (io.Reader, error) {
 	server := locate.Locate(object)
 	if server == "" {
-		return nil, fmt.Errorf("oboject %s locate fall!", object)
+		return nil, fmt.Errorf("object %s locate fall!", object)
 	}
 	return objectstream.NewGetStream(server, object)
 }

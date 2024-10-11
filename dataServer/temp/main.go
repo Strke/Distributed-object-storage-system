@@ -2,6 +2,7 @@ package temp
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-project/Scalable-distributed-system/dataServer/locate"
 	"go-project/Scalable-distributed-system/dataServer/objects"
 	"io/ioutil"
@@ -26,7 +27,7 @@ func (t *tempInfo) writeToFile() error {
 	return nil
 }
 func readFromFile(uuid string) (*tempInfo, error) {
-	f, e := os.Open(os.Getenv("SROTAGE_ROOT") + "/temp/" + uuid)
+	f, e := os.Open(os.Getenv("STORAGE_ROOT") + "/temp/" + uuid)
 	if e != nil {
 		return nil, e
 	}
@@ -38,7 +39,10 @@ func readFromFile(uuid string) (*tempInfo, error) {
 }
 
 func commitTempObject(datFile string, tempinfo *tempInfo) {
+	fmt.Println(datFile)
+	fmt.Println(os.Getenv("STORAGE_ROOT") + "/objects/" + tempinfo.Name)
 	os.Rename(datFile, os.Getenv("STORAGE_ROOT")+"/objects/"+tempinfo.Name)
+	fmt.Println("rename success, prepare to add")
 	locate.Add(tempinfo.Name)
 }
 

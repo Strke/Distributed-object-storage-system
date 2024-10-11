@@ -2,6 +2,7 @@ package locate
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-project/Scalable-distributed-system/rabbitmq"
 	"net/http"
 	"os"
@@ -39,5 +40,7 @@ func Locate(name string) string {
 }
 
 func Exist(name string) bool {
-	return Locate(name) != ""
+	loca := Locate(name)
+	fmt.Println(loca)
+	return loca != ""
 }

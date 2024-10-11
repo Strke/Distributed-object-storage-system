@@ -46,6 +46,7 @@ type TempPutStream struct {
 
 func NewTempPutStream(server, hash string, size int64) (*TempPutStream, error) {
 	request, e := http.NewRequest("POST", "http://"+server+"/temp/"+hash, nil)
+	fmt.Println(request)
 	if e != nil {
 		return nil, e
 	}
@@ -84,6 +85,7 @@ func (w *TempPutStream) Commit(good bool) {
 		method = "PUT"
 	}
 	request, _ := http.NewRequest(method, "http://"+w.Server+"/temp/"+w.Uuid, nil)
+	fmt.Println(request)
 	client := http.Client{}
 	client.Do(request)
 }

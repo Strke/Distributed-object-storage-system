@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/utils"
 	"go-project/Scalable-distributed-system/dataServer/locate"
 	"io"
@@ -23,9 +24,10 @@ import (
 //	io.Copy(w, f)
 //}
 
-func get(w http.ResponseWriter, r *http.Request) {
+func Get(w http.ResponseWriter, r *http.Request) {
 	file := getFile(strings.Split(r.URL.EscapedPath(), "/")[2])
 	if file == "" {
+
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -33,10 +35,12 @@ func get(w http.ResponseWriter, r *http.Request) {
 }
 
 func getFile(hash string) string {
-	file := os.Getenv("SROTAGE_ROOT") + "/object" + hash
+	file := os.Getenv("STORAGE_ROOT") + "/objects/" + hash
 	f, _ := os.Open(file)
 	d := url.PathEscape(utils.CalculateHash(f))
 	f.Close()
+	fmt.Println(d)
+	fmt.Println(hash)
 	if d != hash {
 		log.Println("object hash mismatch, remove", file)
 		locate.Del(hash)
