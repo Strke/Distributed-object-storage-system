@@ -1,17 +1,7 @@
+# 分布式对象存储系统
 # Distributed-object-storage-system
 
-# 启动方式
-#### 数据服务节点启动
-```
-export RABBITMQ_SERVER=amqp://test:test@172.17.0.2:5672
-LISTEN_ADDRESS=10.29.1.1:12345 STORAGE_ROOT=/tmp/1 go run dataServer/dataServer.go
-```
-#### 接口服务节点启动
-```
-LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
-```
-
-## 接口和数据存储分离的架构
+## 1、接口和数据存储分离的架构
 
 ![1](./image/1.png)
 
@@ -19,15 +9,52 @@ LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
 
 **接口服务层**：提供了对外的REST接口
 
-**`RabbitMQ`**：负责心跳包和消息的传输
+**中间件**：
 
-​	--`ApiServer exchange`：用于心跳包的传输。所有**接口服务节点**绑定该`exchange`，所有发往该`exchange`的消息都会被转发给绑定它的所有消息队列
+* **RabbitMQ**：负责心跳包和消息的传输
 
-​	--`DataServer exchange`：用于定位消息的传输。所有**数据服务节点**绑定该exchange，用于接收接口服务的定位消息。
+&emsp;&emsp;​	--`ApiServer exchange`：用于心跳包的传输。所有**接口服务节点**绑定该`exchange`，所有发往该`exchange`的消息都会被转发给绑定它的所有消息队列
+
+&emsp;&emsp;​	--`DataServer exchange`：用于定位消息的传输。所有**数据服务节点**绑定该exchange，用于接收接口服务的定位消息。
+* **Elastic Search**:负责存储元数据
 
 **数据服务层**：提供了数据的存储功能
 
-### 对于心跳信息的处理：
+## 2、基础环境搭建以及配置
+绑定一台服务器上的多个ip地址，配置六个数据服务节点和两个接口服务节点：
+```
+ifconfig enp3s0:1 10.29.1.1/16
+ifconfig enp3s0:2 10.29.1.2/16
+ifconfig enp3s0:3 10.29.1.3/16
+ifconfig enp3s0:4 10.29.1.4/16
+ifconfig enp3s0:5 10.29.1.5/16
+ifconfig enp3s0:6 10.29.1.6/16
+ifconfig enp3s0:7 10.29.2.1/16
+ifconfig enp3s0:8 10.29.2.1/16
+```
+RabbitMQ采用docker容器的方式部署，根据本地容器的相关信息，其ip和端口信息如下：
+```
+172.17.0.2：5672
+```
+ElasticSearch也以docker容器方式部署，但由于本机硬件限制，所以部署在内网另一台服务器上，其ip和端口信息如下：
+```
+192.168.178.176：9200
+```
+此处的配置信息为
+```
+export ES_SERVER=192.168.178.176:9200
+export RABBITMQ_SERVER=amqp://test:test@172.17.0.2:5672
+```
+数据服务启动时（以数据服务节点3为例子），`STORAGE_ROOT`为存储根目录
+```
+LISTEN_ADDRESS=10.29.1.3:12345 STORAGE_ROOT=/tmp/3 go run dataServer/dataServer.go
+```
+接口服务启动时（以接口服务节点1为例子）
+```
+LISTEN_ADDRESS=10.29.2.1:12345 go run ApiServer/ApiServer.go
+```
+
+## 3、对于心跳信息的处理
 
 #### 从接口服务（`ApiServer/heartbeat`）的角度看：
 
@@ -37,15 +64,42 @@ LISTEN_ADDRESS=10.29.2.2:12345 go run ApiServer/ApiServer.go
 
 每隔5秒向`RabbitMQ`的`apiServers exchange`发送一次心跳信息，即向所有接口服务节点注册自己的存在。
 
+![1](./image/2.png)
+
+## 4、数据服务节点启动
+除了心跳信息的发送，数据服务在启动时还执行两个操作
+### 4.1、存储对象收集
+&emsp;&emsp;数据服务节点首先在本地磁盘上自检，将本地磁盘上存储的对象名称(hash值)收集到本地的内存中，
+在此我们创建了一个`map[string]int`的映射结构，并将其作为数据服务节点的对象池。
+
+![c](./image/4-1.png)
+
+&emsp;&emsp;采用这种方式具有优缺点：
+* 优点是：在未来我们需要查询某一对象具体存放位置时，无需迫使数据服务节点频繁的访问其磁盘，大大加快了未来查询操作的时间。
+* 缺点是：导致数据服务节点开机启动时间过长，启动后过一段时间才能正常工作。
+
+### 4.2、定位服务启动
+&emsp;&emsp;首先创建一个`rabbitmq.RabbitMQ`结构体,并将其绑定到`dataServer Exchange`上。
+```
+q := rabbitmq.New(os.Getenv("RABBITMQ_SERVER"))
+q.Bind("dataServers")
+```
+&emsp;&emsp;这样，数据服务节点就能接收到所有从接口服务节点传送来的对象`hash值`，
+并通过查询本地对象池中是否存在该对象`hash值`，
+从而返回自身的`ip地址`。
+
 ### 对于PUT操作：
 
-1、命令 `curl -v 10.29.2.2:12345/objects/test2 -XPUT -d"this is object test2"`，`10.29.2.2:12345`为接口服务节点。
-
-2、通过心跳包程序（`ApiServer/heartbeat/apiserver.go`)中的`ChooseRandomDataServer()`函数选择`dataServer`变量里注册的一个数据服务节点，假设选定的为`10.29.1.1：12345`数据服务节点
-
-3、替换HTTP包中的ip地址，即`10.29.2.2:12345 -> 10.29.1.1：12345`。此时数据包就会被发往`10.29.1.1：12345`数据服务节点。
-
-4、接下来由数据服务节点来执行数据更新的操作。
+1、由于加入了数据校验过程，所以在传输数据之前我们计算数据的hash值，假设我们现在传输的对象名为`test4`,
+对象内容为`this object will have only 1 instance`,
+通过对象内容计算hash值为`aWKQ2BipX94sb+h3xdTbWYAu1yzjn5vyFG2SOwUQIXY=`
+```bash
+echo -n "this object will have only 1 instance" | openssl dgst -sha256 -binary | base64
+```
+所以，我们PUT操作的命令为
+```
+curl -v 10.29.2.1:12345/objects/test4 -XPUT -d"this object will have only 1 instance" -H "Digest: SHA-256=aWKQ2BipX94sb+h3xdTbWYAu1yzjn5vyFG2SOwUQIXY="
+```
 
 ### 对于GET操作：
 
