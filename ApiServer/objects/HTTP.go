@@ -82,8 +82,6 @@ func storeObject(r io.Reader, hash string, size int64) (int, error) {
 	}
 	reader := io.TeeReader(r, stream)
 	d := utils.CalculateHash(reader)
-	fmt.Println(d)
-	fmt.Println(hash)
 	if d != hash {
 		stream.Commit(false)
 		return http.StatusBadRequest, fmt.Errorf("object hash mismatch, calculated=%s, request=%s", d, hash)
