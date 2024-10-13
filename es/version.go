@@ -51,7 +51,7 @@ func AddVersion(name string, hash string, size int64) error {
 }
 func SearchAllVersions(name string, from, size int) ([]Metadata, error) {
 	url := fmt.Sprintf("http://%s/metadata/_search?sort=name,version&from=%d&size=%d", os.Getenv("ES_SERVER"), from, size)
-	//fmt.Println(url)
+	fmt.Println(url)
 	if name != "" {
 		url += "&q=Name:" + name
 	}

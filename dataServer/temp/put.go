@@ -40,6 +40,7 @@ func put(w http.ResponseWriter, r *http.Request) {
 		os.Remove(datFile)
 		log.Println("actual size mismatch, expect", tempinfo.Size, "actual", actual)
 		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 	commitTempObject(datFile, tempinfo)

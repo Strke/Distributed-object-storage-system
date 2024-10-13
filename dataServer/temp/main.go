@@ -3,17 +3,32 @@ package temp
 import (
 	"encoding/json"
 	"fmt"
+	"go-project/Scalable-distributed-system/ApiServer/utils"
 	"go-project/Scalable-distributed-system/dataServer/locate"
 	"go-project/Scalable-distributed-system/dataServer/objects"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type tempInfo struct {
 	Uuid string
 	Name string
 	Size int64
+}
+
+func (t *tempInfo) hash() string {
+	s := strings.Split(t.Name, ".")
+	return s[0]
+}
+
+func (t *tempInfo) id() int {
+	s := strings.Split(t.Name, ".")
+	id, _ := strconv.Atoi(s[1])
+	return id
 }
 
 func (t *tempInfo) writeToFile() error {
@@ -39,11 +54,12 @@ func readFromFile(uuid string) (*tempInfo, error) {
 }
 
 func commitTempObject(datFile string, tempinfo *tempInfo) {
-	fmt.Println(datFile)
-	fmt.Println(os.Getenv("STORAGE_ROOT") + "/objects/" + tempinfo.Name)
-	os.Rename(datFile, os.Getenv("STORAGE_ROOT")+"/objects/"+tempinfo.Name)
+	f, _ := os.Open(datFile)
+	d := url.PathEscape(utils.CalculateHash(f))
+	f.Close()
+	os.Rename(datFile, os.Getenv("STORAGE_ROOT")+"/objects/"+tempinfo.Name+"."+d)
 	fmt.Println("rename success, prepare to add")
-	locate.Add(tempinfo.Name)
+	locate.Add(tempinfo.hash(), tempinfo.id())
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {

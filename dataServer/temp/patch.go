@@ -1,6 +1,7 @@
 package temp
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -25,6 +26,7 @@ func patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
+	fmt.Println(r.Body)
 	_, e = io.Copy(f, r.Body)
 	if e != nil {
 		log.Println(e)
@@ -37,10 +39,13 @@ func patch(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	fmt.Println(info)
 	actual := info.Size()
 	if actual > tempinfo.Size {
 		os.Remove(datFile)
 		os.Remove(infoFile)
+		fmt.Println(datFile)
+		fmt.Println(infoFile)
 		log.Println("actual size", actual, "exceeds", tempinfo.Size)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
