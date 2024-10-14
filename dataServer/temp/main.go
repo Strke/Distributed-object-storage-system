@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/utils"
 	"go-project/Scalable-distributed-system/dataServer/locate"
-	"go-project/Scalable-distributed-system/dataServer/objects"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -69,7 +68,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if m == http.MethodGet {
-		objects.Get(w, r)
+		get(w, r)
 		return
 	}
 	if m == http.MethodPost {
@@ -78,6 +77,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if m == http.MethodPatch {
 		patch(w, r)
+		return
+	}
+	if m == http.MethodHead {
+		head(w, r)
+		return
+	}
+	if m == http.MethodDelete {
+		del(w, r)
 		return
 	}
 	w.WriteHeader(http.StatusMethodNotAllowed)

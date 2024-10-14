@@ -1,6 +1,8 @@
 package rs
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/klauspost/reedsolomon"
 	"go-project/Scalable-distributed-system/objectstream"
@@ -82,4 +84,23 @@ func (s *RSPutStream) Commit(success bool) {
 		//并进一步的调用了TempPutStream的Commit方法
 		s.writers[i].(*objectstream.TempPutStream).Commit(success)
 	}
+}
+
+func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
+	b, e := base64.StdEncoding.DecodeString(token)
+	if e != nil {
+		return nil, e
+	}
+	var t resumableToken
+	e = json.Unmarshal(b, &t)
+	if e != nil {
+		return nil, e
+	}
+
+	writers := make([]io.Writer, ALL_SHARDS)
+	for i := range writers {
+		writers[i] = &objectstream.TempPutStream{t.Servers[i], t.Uuids[i]}
+	}
+	enc := NewEncoder(writers)
+	return &RSResumablePutStream{&RSPutStream{enc}, &t}, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/heartbeat"
 	"go-project/Scalable-distributed-system/ApiServer/locate"
+	"go-project/Scalable-distributed-system/ApiServer/utils"
 	"go-project/Scalable-distributed-system/es"
 	"go-project/Scalable-distributed-system/rs"
 	"io"
@@ -47,12 +48,13 @@ func get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	_, e = io.Copy(w, stream)
-	if e != nil {
-		log.Println(e)
-		w.WriteHeader(http.StatusNotFound)
-		return
+	offset := utils.GetOffsetFromHeader(r.Header)
+	if offset != 0 {
+		stream.seek(offset, io.SeekCurrent)
+		w.Header().Set("content-range", fmt.Sprintf("bytes %d-%d/%d", offset, meta.Size-1, meta.Size))
+		w.WriteHeader(http.StatusPartialContent)
 	}
+	io.Copy(w, stream)
 	stream.Close()
 }
 
