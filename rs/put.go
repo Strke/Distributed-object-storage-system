@@ -89,14 +89,15 @@ func (s *RSPutStream) Commit(success bool) {
 func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, error) {
 	b, e := base64.StdEncoding.DecodeString(token)
 	if e != nil {
+		fmt.Println("decode error")
 		return nil, e
 	}
 	var t resumableToken
 	e = json.Unmarshal(b, &t)
 	if e != nil {
+		fmt.Println("json parse error")
 		return nil, e
 	}
-
 	writers := make([]io.Writer, ALL_SHARDS)
 	for i := range writers {
 		writers[i] = &objectstream.TempPutStream{t.Servers[i], t.Uuids[i]}

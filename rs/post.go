@@ -29,12 +29,16 @@ func (s *RSResumablePutStream) ToToken() string {
 }
 
 func (s *RSResumablePutStream) CurrentSize() int64 {
+	fmt.Println(s.Servers[0], s.Uuids[0])
 	r, e := http.Head(fmt.Sprintf("http://%s/temp/%s", s.Servers[0], s.Uuids[0]))
+	fmt.Println(fmt.Sprintf("http://%s/temp/%s", s.Servers[0], s.Uuids[0]))
 	if e != nil {
 		log.Println(e)
 		return -1
 	}
+	fmt.Println(r)
 	if r.StatusCode != http.StatusOK {
+		fmt.Println(1)
 		log.Println(r.StatusCode)
 		return -1
 	}

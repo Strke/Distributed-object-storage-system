@@ -17,9 +17,11 @@ func head(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	current := stream.CurrentSize()
+	fmt.Println("start get size")
 	if current == -1 {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	fmt.Println("current:", current)
 	w.Header().Set("content-length", fmt.Sprintf("%d", current))
 }

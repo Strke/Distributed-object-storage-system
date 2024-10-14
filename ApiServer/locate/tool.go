@@ -2,6 +2,7 @@ package locate
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-project/Scalable-distributed-system/rabbitmq"
 	"go-project/Scalable-distributed-system/rs"
 	"go-project/Scalable-distributed-system/types"
@@ -31,5 +32,8 @@ func Locate(name string) (locateInfo map[int]string) {
 }
 
 func Exist(name string) bool {
+	names := Locate(name)
+	fmt.Println("names :", names)
+	fmt.Println("names Size:", len(names))
 	return len(Locate(name)) >= rs.DATA_SHARDS
 }

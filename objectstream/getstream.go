@@ -24,7 +24,18 @@ func NewGetStream(server, object string) (*GetStream, error) {
 	if server == "" || object == "" {
 		return nil, fmt.Errorf("invalid server %s object %s", server, object)
 	}
+	fmt.Println("url is :")
+	fmt.Println("http://" + server + "/objects/" + object)
 	return newGetStream("http://" + server + "/objects/" + object)
+}
+
+func NewGetTempStream(server, object string) (*GetStream, error) {
+	if server == "" || object == "" {
+		return nil, fmt.Errorf("invalid server %s object %s", server, object)
+	}
+	fmt.Println("url is :")
+	fmt.Println("http://" + server + "/temp/" + object)
+	return newGetStream("http://" + server + "/temp/" + object)
 }
 
 func (r *GetStream) Read(p []byte) (n int, err error) {

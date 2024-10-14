@@ -28,7 +28,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	fmt.Println("name is :", name)
 	meta, e := es.GetMetadata(name, version)
+	fmt.Println("meta is :", meta)
 	if e != nil {
 		log.Println(e)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -36,12 +38,13 @@ func get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if meta.Hash == "" {
+		fmt.Println("can`t find source")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	hash := url.PathEscape(meta.Hash)
-
+	fmt.Println("hash is :", hash)
 	stream, e := GetStream(hash, meta.Size)
 	if e != nil {
 		log.Println(e)
@@ -49,8 +52,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	offset := utils.GetOffsetFromHeader(r.Header)
+	fmt.Println("offset:", offset)
 	if offset != 0 {
-		stream.seek(offset, io.SeekCurrent)
+		stream.Seek(offset, io.SeekCurrent)
 		w.Header().Set("content-range", fmt.Sprintf("bytes %d-%d/%d", offset, meta.Size-1, meta.Size))
 		w.WriteHeader(http.StatusPartialContent)
 	}
