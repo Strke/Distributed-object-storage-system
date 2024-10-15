@@ -42,3 +42,10 @@ func PutMetadata(name string, version int, size int64, hash string) error {
 	}
 	return nil
 }
+
+func DelMetadata(name string, version int) {
+	client := http.Client{}
+	url := fmt.Sprintf("http://%s/metadata/objects/%s_%d", os.Getenv("ES_SERVER"), name, version)
+	request, _ := http.NewRequest("DELETE", url, nil)
+	client.Do(request)
+}

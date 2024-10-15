@@ -3,10 +3,12 @@ package es
 import (
 	"encoding/json"
 	"fmt"
+	"go-project/Scalable-distributed-system/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type hit struct {
@@ -17,6 +19,14 @@ type searchResult struct {
 	Hits struct {
 		Total int
 		Hits  []hit
+	}
+}
+
+type aggregateResult struct {
+	Aggregations struct {
+		Group_by_name struct {
+			Buckets []types.Bucket
+		}
 	}
 }
 
@@ -68,4 +78,38 @@ func SearchAllVersions(name string, from, size int) ([]Metadata, error) {
 	}
 	fmt.Println(metas)
 	return metas, nil
+}
+
+func SearchVersionStatus(min_doc_count int) ([]types.Bucket, error) {
+	client := http.Client{}
+	url := fmt.Sprintf("http://%s/metadata/_search", os.Getenv("ES_SERVER"))
+	body := fmt.Sprintf(`
+	{
+		"size": 0,
+		"aggs": {
+			"group_by_name": {
+				"terms":{
+					"field":"name",
+					"min_doc_count":%d
+				},
+				"aggs":{
+					"min_version":{
+						"min":{
+							"filed":"version"
+						}
+					}
+				}
+			}	
+		}
+	}`, min_doc_count)
+	request, _ := http.NewRequest("GET", url, strings.NewReader(body))
+	r, e := client.Do(request)
+	if e != nil {
+		return nil, e
+	}
+	b, _ := ioutil.ReadAll(r.Body)
+	var ar aggregateResult
+	json.Unmarshal(b, &ar)
+	return ar.Aggregations.Group_by_name.Buckets, nil
+
 }
