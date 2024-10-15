@@ -1,10 +1,11 @@
 package temp
 
 import (
+	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/utils"
 	"go-project/Scalable-distributed-system/dataServer/locate"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -54,10 +55,14 @@ func readFromFile(uuid string) (*tempInfo, error) {
 
 func commitTempObject(datFile string, tempinfo *tempInfo) {
 	f, _ := os.Open(datFile)
+	defer f.Close()
 	d := url.PathEscape(utils.CalculateHash(f))
-	f.Close()
-	os.Rename(datFile, os.Getenv("STORAGE_ROOT")+"/objects/"+tempinfo.Name+"."+d)
-	fmt.Println("rename success, prepare to add")
+	f.Seek(0, io.SeekStart)
+	w, _ := os.Create(os.Getenv("STORAGE_ROOT") + "/objects/" + tempinfo.Name + "." + d)
+	w2 := gzip.NewWriter(w)
+	io.Copy(w2, f)
+	w2.Close()
+	os.Remove(datFile)
 	locate.Add(tempinfo.hash(), tempinfo.id())
 }
 

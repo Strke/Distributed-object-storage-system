@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/base64"
 	"go-project/Scalable-distributed-system/dataServer/locate"
@@ -55,7 +56,17 @@ func getFile(name string) string {
 }
 
 func sendFile(w io.Writer, file string) {
-	f, _ := os.Open(file)
+	f, e := os.Open(file)
+	if e != nil {
+		log.Print(e)
+		return
+	}
 	defer f.Close()
-	io.Copy(w, f)
+	gzipStream, e := gzip.NewReader(f)
+	if e != nil {
+		log.Print(e)
+		return
+	}
+	io.Copy(w, gzipStream)
+	gzipStream.Close()
 }

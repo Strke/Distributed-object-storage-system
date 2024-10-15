@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"compress/gzip"
 	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/heartbeat"
 	"go-project/Scalable-distributed-system/ApiServer/locate"
@@ -28,9 +29,9 @@ func get(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	fmt.Println("name is :", name)
+	//fmt.Println("name is :", name)
 	meta, e := es.GetMetadata(name, version)
-	fmt.Println("meta is :", meta)
+	//fmt.Println("meta is :", meta)
 	if e != nil {
 		log.Println(e)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -59,7 +60,22 @@ func get(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-range", fmt.Sprintf("bytes %d-%d/%d", offset, meta.Size-1, meta.Size))
 		w.WriteHeader(http.StatusPartialContent)
 	}
-	io.Copy(w, stream)
+	acceptGzip := false
+	encoding := r.Header["Accept-Encoding"]
+	for i := range encoding {
+		if encoding[i] == "gzip" {
+			acceptGzip = true
+			break
+		}
+	}
+	if acceptGzip {
+		w.Header().Set("content-encoding", "gzip")
+		w2 := gzip.NewWriter(w)
+		io.Copy(w2, stream)
+		w2.Close()
+	} else {
+		io.Copy(w, stream)
+	}
 	stream.Close()
 }
 
