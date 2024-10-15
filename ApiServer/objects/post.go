@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	"go-project/Scalable-distributed-system/ApiServer/heartbeat"
 	"go-project/Scalable-distributed-system/ApiServer/locate"
 	"go-project/Scalable-distributed-system/ApiServer/utils"
@@ -22,6 +23,7 @@ func post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hash := utils.GetHashFromHeader(r.Header)
+	fmt.Println("origin hash is :", hash)
 	if hash == "" {
 		log.Println("missing object hash in digest header")
 		w.WriteHeader(http.StatusBadRequest)
@@ -44,6 +46,7 @@ func post(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
+	fmt.Println("the hash in token is :", url.PathEscape(hash))
 	stream, e := rs.NewRSResumablePutStream(ds, name, url.PathEscape(hash), size)
 	if e != nil {
 		log.Println(e)

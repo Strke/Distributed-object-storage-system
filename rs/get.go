@@ -81,13 +81,14 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 			return 0, e
 		}
 	}
+
 	length := len(p)
 	if d.cacheSize < length {
 		length = d.cacheSize
 	}
 	d.cacheSize -= length
 	copy(p, d.cache[:length])
-	d.cache = d.cache[:length]
+	d.cache = d.cache[length:]
 	return length, nil
 }
 
@@ -168,7 +169,6 @@ func NewRSResumableGetStream(dataServers []string, uuids []string, size int64) (
 		}
 	}
 	writers := make([]io.Writer, ALL_SHARDS)
-	fmt.Println("getstream.size", size)
 	dec := NewDecoder(readers, writers, size)
 	return &RSResumableGetStream{dec}, nil
 }

@@ -58,14 +58,12 @@ func put(w http.ResponseWriter, r *http.Request) {
 			stream.Flush()
 			fmt.Println("Servers is :", stream.Servers)
 			fmt.Println("Uuids is :", stream.Uuids)
-			fmt.Println("Size is :", stream.Size)
 			getStream, e := rs.NewRSResumableGetStream(stream.Servers, stream.Uuids, stream.Size)
-			fmt.Println("getstream.size:", getStream)
-			fmt.Println("The error is :", e)
 			hash := utils.CalculateHash(getStream)
 			fmt.Println("last hash:", hash)
-			fmt.Println("stream.hash", stream.Hash)
-			if hash != stream.Hash {
+			originHash, e := url.PathUnescape(stream.Hash)
+			fmt.Println("stream.hash", originHash)
+			if hash != originHash {
 				stream.Commit(false)
 				log.Println("resumable put done but hash mismatch")
 				w.WriteHeader(http.StatusForbidden)

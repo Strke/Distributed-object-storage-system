@@ -1,6 +1,7 @@
 package rs
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -68,6 +69,9 @@ func (e *encoder) Flush() {
 	if len(e.cache) == 0 {
 		return
 	}
+	h := sha256.New()
+	h.Write(e.cache)
+	fmt.Println("the hash of data has not storage", base64.StdEncoding.EncodeToString(h.Sum(nil)))
 	shards, _ := e.enc.Split(e.cache)
 	e.enc.Encode(shards)
 	for i := range shards {
@@ -94,6 +98,7 @@ func NewRSResumablePutStreamFromToken(token string) (*RSResumablePutStream, erro
 	}
 	var t resumableToken
 	e = json.Unmarshal(b, &t)
+	fmt.Println("the token send to put means:", t)
 	if e != nil {
 		fmt.Println("json parse error")
 		return nil, e

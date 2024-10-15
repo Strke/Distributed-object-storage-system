@@ -44,6 +44,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hash := url.PathEscape(meta.Hash)
+	hash, e = url.PathUnescape(hash)
 	fmt.Println("hash is :", hash)
 	stream, e := GetStream(hash, meta.Size)
 	if e != nil {
